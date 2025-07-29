@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Speedwriter</title>
+  <style>
+    * {
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: url('image.png') center / cover no-repeat;
+      position: relative;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+
+    header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 2px solid #c1fd5b;
+      z-index: 2;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    header h1 {
+      color: #c1fd5b;
+      font-size: 20px;
+      margin: 0 auto;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Courier New', monospace;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      height: 100vh;
+      padding: 60px 160px 0 160px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.0);
+    }
+
+    .overlay h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: white;
+    }
+
+    .overlay p {
+      color: #bbb;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    .time-select {
+      display: flex;
+      gap: 10px;
+      background: #111;
+      padding: 10px 20px;
+      border-radius: 30px;
+      border: 2px solid #c1fd5b;
+    }
+
+    .time-option {
+      color: white;
+      background: none;
+      border: none;
+      font-size: 16px;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 20px;
+    }
+
+    .time-option.active {
+      background: #c1fd5b;
+      color: black;
+    }
+
+    .typing-box {
+      font-size: 32px;
+      font-weight: bold;
+      max-width: 1000px;
+      margin-top: 60px;
+      text-align: left;
+      white-space: normal;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      color: white;
+      height: 200px;
+      overflow: hidden;
+    }
+
+    .line {
+      display: none;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 10px;
+    }
+
+    .line.active {
+      display: flex;
+    }
+
+    .word {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
+    .letter.correct { color: #c1fd5b; text-decoration: none; }
+    .letter.incorrect { color: red; text-decoration: none; }
+    .letter.active { text-decoration: underline; color: white; }
+
+    .metrics {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      background: #111;
+      padding: 10px 20px;
+      border-radius: 30px;
+      border: 2px solid #c1fd5b;
+      color: #c1fd5b;
+      font-size: 14px;
+      z-index: 2;
+    }
+
+    .hidden { display: none; }
+    input#hiddenInput { position: absolute; opacity: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="Logo">
+    <h1>Symbiotic typer</h1>
+  </header>
+  <div class="container" onclick="focusInput()">
+    <input id="hiddenInput" autofocus />
+
+    <div class="overlay" id="startOverlay">
+      <h1>Click Anywhere to Play</h1>
+      <p>Click to focus the game and start typing.</p>
+      <div class="time-select">
+        <button class="time-option active" data-time="15">15</button>
+        <button class="time-option" data-time="30">30</button>
+        <button class="time-option" data-time="60">60</button>
+      </div>
+    </div>
+
+    <div class="typing-box" id="typingBox"></div>
+    <div class="metrics hidden" id="metrics">
+      <div><span id="wpm">0</span> WPM</div>
+      <div><span id="accuracy">100</span>% ACC</div>
+      <div><span id="timeLeft">0</span>s</div>
+    </div>
+  </div>
+
+  <script>
+    const textPool = [
+      `Symbiotic is a next generation decentralized protocol built for composability and shared security in the onchain ecosystem It provides a flexible and modular foundation where applications and services can plug into a shared infrastructure benefiting from collective validator sets and modular execution environments Unlike traditional Layer 2 systems Symbiotic does not enforce a single virtual machine or security model Instead it empowers developers to compose execution layers settlement logic and data availability in a way that best fits their applications needs The core of Symbiotic lies in its permissionless architecture Anyone can spin up their own execution environment rollup or appchain and connect to the broader Symbiotic network Security is provided through a shared staking system and programmable slashing allowing the network to enforce economic guarantees and protect against malicious activity With a focus on modularity Symbiotic encourages innovation Developers can choose their own sequencers define custom validity rules or leverage existing components from other chains This makes Symbiotic particularly powerful for building decentralized finance applications crosschain bridges and gaming infrastructures where flexibility speed and shared liquidity matter most Symbiotic is not just a protocol its a framework for creating scalable interoperable and future proof blockchain systems`,
+
+      `At the heart of Symbiotic lies a shared validator pool where staking and slashing are programmable enabling flexible trust assumptions across chains Rather than forcing a single definition of security Symbiotic allows each application to define how validators are selected how they are incentivized and what behavior constitutes slashing This programmable security model ensures that applications with different risk profiles can still rely on the same decentralized infrastructure Validators in the Symbiotic network are not bound to one chain or one role They may simultaneously secure multiple execution environments each with their own slashing logic and rules of engagement This creates a powerful system of shared accountability where capital efficiency meets flexible enforcement Developers can finetune economic guarantees introduce appspecific penalties or even experiment with new consensus mechanismsall without forking the underlying protocol This level of customization enables a new generation of rollups sidechains and modular appchains to launch rapidly without compromising on security or decentralization Builders can focus on application logic while relying on Symbiotics validator economy to enforce integrity at scale The result is a permissionless modular environment where innovation thrives and security is enforced not by uniformity but by composability Symbiotic doesnt just offer shared securityit redefines it as a spectrum of programmable coordination tailored to the needs of every chain`,
+
+      `Symbiotic enables developers to launch and scale decentralized applications without rebuilding infrastructure from scratch Through its modular design developers can compose their ideal execution environment plug into existing validator networks and define custom settlement logic all without compromising on performance or sovereignty This removes the operational burden traditionally associated with launching secure onchain systems The network acts as a foundation layer where shared infrastructure doesnt mean shared limitations Each application chooses its own stack rollup frameworks virtual machines sequencers and data availability solutions Meanwhile validators can opt into securing multiple chains simultaneously with economic incentives aligned through programmable staking and appspecific slashing conditions By decoupling execution from consensus and security from monolithic trust assumptions Symbiotic opens a space where experimentation doesnt come at the cost of fragmentation Whether building highfrequency trading platforms zeroknowledge bridges or permissionless gaming worlds developers can iterate and deploy quickly knowing the core coordination logic is battletested and customizable Symbiotic is the toolkit for serious builders where speed security and modularity arent tradeoffs but defaults`,
+
+      `Symbiotic is designed to be the connective tissue of a fragmented blockchain world enabling seamless interoperability without imposing a single standard As the number of sovereign chains grows the challenge is no longer launching networks its making them work together Symbiotic solves this by allowing independent chains to coordinate economically and technically through shared validators modular infrastructure and flexible message passing Each execution environment in Symbiotic is free to choose its own language virtual machine and consensus rules yet still participates in a unified validator ecosystem This turns the network into a decentralized coordination layer where chains can exchange assets state and logic without requiring bridges or centralized intermediaries Validators act as neutral operators securing multiple chains simultaneously while enforcing chainspecific logic through programmable slashing This architecture makes Symbiotic an ideal foundation for multichain applications DAOs operating across rollups games syncing assets in real time or financial systems that rely on composable liquidity from multiple chains As developers push the boundaries of Web3 Symbiotic ensures the underlying infrastructure remains flexible secure and deeply interconnected In a world where every application can be its own chain Symbiotic is the common ground they build on`,
+
+      `Developers building in the modular blockchain era face a key challenge flexibility without fragmentation Symbiotic addresses this by providing a neutral coordination layer where chains can define their own logic plug into shared infrastructure and still interoperate seamlessly It doesnt dictate how applications should be built it gives them the tools to define their own architecture while inheriting security and connectivity by default Through programmable staking slashing and permissionless validator onboarding applications get to choose how strict or lenient their security models should be Validators arent locked into singlepurpose chains they operate across multiple systems each with their own parameters incentives and constraints This radically improves capital efficiency and creates a composable trust layer across the entire network Crossdomain communication becomes native not patched on Whether its two games sharing inventory data a DeFi protocol bridging assets or a zkrollup posting proofs the coordination is handled by the same core infrastructure one thats built to be adaptable scalable and sovereignfriendly Symbiotic isnt just infrastructure its a trust engine for a modular collaborative and deeply interconnected blockchain future`,
+
+      `The architecture of Symbiotic enables permissionless creation of execution environments that can settle securely without relying on centralized infrastructure Validators across the network participate in a shared staking system and slashing conditions can be uniquely tailored to each application This flexibility ensures that while the network remains cohesive and economically aligned individual builders retain the sovereignty to define their own constraints and guarantees In this environment innovation can flourish without the typical cost of fragmentation Rollups appchains and domainspecific environments can operate independently yet share core infrastructure creating a system where decentralization and cooperation reinforce each other Because execution consensus and data availability are decoupled applications can finetune tradeoffs without inheriting unwanted constraints Symbiotics modular coordination logic brings composability not just to smart contracts but to the chains themselves It enables a future where hundreds of sovereign chains coordinate effortlessly through shared logic pooled security and aligned incentives`
+    ];
+
+
+
+    const words = textPool[Math.floor(Math.random() * textPool.length)].split(' ');
+
+    const typingBox = document.getElementById("typingBox");
+    const input = document.getElementById("hiddenInput");
+    const startOverlay = document.getElementById("startOverlay");
+    const timeButtons = document.querySelectorAll(".time-option");
+    const metrics = document.getElementById("metrics");
+    const wpmEl = document.getElementById("wpm");
+    const accEl = document.getElementById("accuracy");
+    const timeLeftEl = document.getElementById("timeLeft");
+
+    let selectedTime = 15;
+    let timeLeft = selectedTime;
+    let timer;
+    let isRunning = false;
+    let currentIndex = 0;
+    let letterElements = [];
+    let lineElements = [];
+    let currentLine = 0;
+
+    function loadText() {
+      typingBox.innerHTML = '';
+      letterElements = [];
+      lineElements = [];
+      currentLine = 0;
+
+      fullText = words.join(" ") + " ";
+      const wordsPerLine = 10;
+      for (let i = 0; i < words.length; i += wordsPerLine) {
+        const line = document.createElement("div");
+        line.className = "line";
+        const lineWords = words.slice(i, i + wordsPerLine);
+        lineWords.forEach(word => {
+          const wordSpan = document.createElement("span");
+          wordSpan.className = "word";
+
+          word.split('').forEach(ch => {
+            const span = document.createElement("span");
+            span.textContent = ch;
+            span.className = "letter";
+            wordSpan.appendChild(span);
+            letterElements.push(span);
+          });
+
+          const space = document.createElement("span");
+          space.textContent = ' ';
+          space.className = "letter";
+          wordSpan.appendChild(space);
+          letterElements.push(space);
+
+          line.appendChild(wordSpan);
+        });
+
+        typingBox.appendChild(line);
+        lineElements.push(line);
+      }
+
+      showLines();
+      if (letterElements.length) letterElements[0].classList.add("active");
+    }
+
+    function showLines() {
+      lineElements.forEach((line, index) => {
+        line.classList.remove("active");
+        if (index === currentLine || index === currentLine + 1) {
+          line.classList.add("active");
+        }
+      });
+    }
+
+    function updateAccuracy() {
+      const typed = letterElements.slice(0, currentIndex);
+      const correct = typed.filter(el => el.classList.contains('correct')).length;
+      const acc = typed.length === 0 ? 100 : Math.round((correct / typed.length) * 100);
+      accEl.textContent = acc;
+    }
+
+    function focusInput() { input.focus(); }
+
+    function startGame() {
+      currentIndex = 0;
+      timeLeft = selectedTime;
+      isRunning = true;
+      loadText();
+      updateTime();
+      startOverlay.classList.add("hidden");
+      metrics.classList.remove("hidden");
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTime();
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    function updateTime() {
+      timeLeftEl.textContent = timeLeft;
+      const correct = letterElements.slice(0, currentIndex).filter(el => el.classList.contains('correct')).length;
+      wpmEl.textContent = Math.round((correct / 5) / (selectedTime - timeLeft + 1) * 60);
+      updateAccuracy();
+    }
+
+    function endGame() {
+      clearInterval(timer);
+      isRunning = false;
+      input.blur();
+      startOverlay.querySelector("h1").textContent = "Game Over";
+      startOverlay.querySelector("p").textContent = "Click to try again.";
+      startOverlay.classList.remove("hidden");
+    }
+
+    input.addEventListener("keydown", e => {
+      if (!isRunning) return;
+      if (e.key === 'Backspace') {
+        if (currentIndex > 0) {
+          letterElements[currentIndex].classList.remove("active");
+          currentIndex--;
+          letterElements[currentIndex].classList.remove("correct", "incorrect");
+          letterElements[currentIndex].classList.add("active");
+          updateAccuracy();
+        }
+        e.preventDefault();
+        return;
+      }
+
+      if (currentIndex >= letterElements.length) return;
+      const expected = letterElements[currentIndex].textContent;
+      const typed = e.key;
+
+      if (typed.length === 1) {
+        if (typed === expected) {
+          letterElements[currentIndex].classList.remove("incorrect");
+          letterElements[currentIndex].classList.add("correct");
+        } else {
+          letterElements[currentIndex].classList.remove("correct");
+          letterElements[currentIndex].classList.add("incorrect");
+        }
+        letterElements[currentIndex].classList.remove("active");
+        currentIndex++;
+        if (letterElements[currentIndex]) letterElements[currentIndex].classList.add("active");
+
+        const lineLetters = Array.from(lineElements[currentLine].querySelectorAll('.letter'));
+        const isLineComplete = lineLetters.every(el => el.classList.contains('correct') || el.classList.contains('incorrect'));
+        if (isLineComplete) {
+          currentLine++;
+          showLines();
+        }
+
+        updateTime();
+        e.preventDefault();
+      }
+    });
+
+    timeButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        timeButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedTime = parseInt(btn.dataset.time);
+      });
+    });
+
+    document.addEventListener("click", () => {
+      if (!isRunning) startGame();
+    });
+  </script>
+</body>
+</html>
